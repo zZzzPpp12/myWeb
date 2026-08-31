@@ -13,6 +13,7 @@ import com.socialweb.repository.PostRepository;
 import com.socialweb.repository.UserFollowRepository;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -26,17 +27,20 @@ public class Mapper {
     private final PostDislikeRepository dislikeRepository;
     private final PostBookmarkRepository bookmarkRepository;
     private final PostRepository postRepository;
+    private final com.socialweb.repository.BoilingPointRepository boilingRepository;
 
     public Mapper(UserFollowRepository followRepository,
                   PostLikeRepository likeRepository,
                   PostDislikeRepository dislikeRepository,
                   PostBookmarkRepository bookmarkRepository,
-                  PostRepository postRepository) {
+                  PostRepository postRepository,
+                  com.socialweb.repository.BoilingPointRepository boilingRepository) {
         this.followRepository = followRepository;
         this.likeRepository = likeRepository;
         this.dislikeRepository = dislikeRepository;
         this.bookmarkRepository = bookmarkRepository;
         this.postRepository = postRepository;
+        this.boilingRepository = boilingRepository;
     }
 
     public static List<String> parseTags(String raw) {
@@ -46,6 +50,9 @@ public class Mapper {
                 .filter(s -> !s.isEmpty())
                 .toList();
     }
+
+    /** 5 分钟内活跃视为在线 */
+    private static final java.time.Duration ONLINE_WINDOW = java.time.Duration.ofMinutes(5);
 
     public UserSummary toUserSummary(User u) {
         if (u == null) return null;
@@ -58,6 +65,8 @@ public class Mapper {
         s.setReputation(rep);
         s.setLevel(LevelSystem.level(rep));
         s.setLevelName(LevelSystem.levelName(rep));
+        s.setOnline(u.getLastActiveAt() != null
+                && u.getLastActiveAt().isAfter(LocalDateTime.now().minus(ONLINE_WINDOW)));
         return s;
     }
 
@@ -78,6 +87,12 @@ public class Mapper {
         dto.setReputation(rep);
         dto.setLevel(LevelSystem.level(rep));
         dto.setLevelName(LevelSystem.levelName(rep));
+        dto.setOnline(u.getLastActiveAt() != null
+                && u.getLastActiveAt().isAfter(LocalDateTime.now().minus(ONLINE_WINDOW)));
+        // 互动统计：收到的赞（文章赞）+ 沸点数
+        dto.setLikesReceived(postRepository.sumLikeCountByAuthorId(u.getId()));
+        dto.setBoilingsCount(boilingRepository.countByAuthorId(u.getId()));
+        dto.setLastActiveAt(u.getLastActiveAt());
         dto.setCreatedAt(u.getCreatedAt());
         return dto;
     }

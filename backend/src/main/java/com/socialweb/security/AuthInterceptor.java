@@ -9,9 +9,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final JwtService jwtService;
+    private final jakarta.persistence.EntityManagerFactory emf;
 
-    public AuthInterceptor(JwtService jwtService) {
+    public AuthInterceptor(JwtService jwtService, jakarta.persistence.EntityManagerFactory emf) {
         this.jwtService = jwtService;
+        this.emf = emf;
     }
 
     @Override
@@ -21,9 +23,28 @@ public class AuthInterceptor implements HandlerInterceptor {
             Long uid = jwtService.parseUserId(header.substring(7).trim());
             if (uid != null) {
                 CurrentUser.set(uid);
+                touchActive(uid);
             }
         }
         return true;
+    }
+
+    /** 更新活跃时间（在线状态推断），异常不影响请求 */
+    private void touchActive(Long uid) {
+        try {
+            jakarta.persistence.EntityManager em = emf.createEntityManager();
+            try {
+                em.getTransaction().begin();
+                em.createQuery("update User u set u.lastActiveAt = :now where u.id = :uid")
+                        .setParameter("now", java.time.LocalDateTime.now())
+                        .setParameter("uid", uid)
+                        .executeUpdate();
+                em.getTransaction().commit();
+            } finally {
+                em.close();
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     @Override

@@ -19,4 +19,6 @@ public class UserSummary {
     private int level;
     /** 等级称号 */
     private String levelName;
+    /** 是否在线（5 分钟内活跃） */
+    private Boolean online;
 }

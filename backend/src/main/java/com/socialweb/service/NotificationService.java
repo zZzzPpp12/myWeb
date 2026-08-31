@@ -63,7 +63,10 @@ public class NotificationService {
         dto.setRead(n.isRead());
         dto.setActor(mapper.toUserSummary(n.getActor()));
         dto.setCreatedAt(n.getCreatedAt());
-        if (n.getPostId() != null) {
+        // MENTION / BOILING_* 通知无关联文章，仅文章类通知加载 post
+        if (n.getPostId() != null && (n.getType() == NotificationType.LIKE
+                || n.getType() == NotificationType.COMMENT
+                || n.getType() == NotificationType.POST)) {
             Post p = postRepository.findById(n.getPostId()).orElse(null);
             if (p != null) {
                 dto.setPost(mapper.toPostSummary(p, false, false));
