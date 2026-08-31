@@ -122,10 +122,16 @@ watch(() => props.id, () => {
             <h1>{{ user.nickname || user.username }}</h1>
             <LevelBadge :level="user.level" :level-name="user.levelName" />
             <span class="uh-username">@{{ user.username }}</span>
+            <!-- 在线状态：5 分钟内活跃显示绿点在线，否则灰点离线 -->
+            <span class="uh-online" :class="{ on: user.online }">
+              {{ user.online ? '在线' : '离线' }}
+            </span>
           </div>
           <p class="uh-bio">{{ user.bio || '这个作者很低调，什么都没留下～' }}</p>
           <div class="uh-stats">
             <span class="uh-stat"><b>{{ user.reputation || 0 }}</b><span>声望</span></span>
+            <span class="uh-stat"><b>{{ user.likesReceived || 0 }}</b><span>收到的赞</span></span>
+            <span class="uh-stat"><b>{{ user.boilingsCount || 0 }}</b><span>沸点</span></span>
             <button class="uh-stat" @click="openModal('following')">
               <b>{{ user.followingCount || 0 }}</b><span>关注</span>
             </button>
@@ -210,6 +216,31 @@ watch(() => props.id, () => {
 .uh-username {
   font-size: 13px;
   color: var(--text-3);
+}
+
+/* 在线状态点：绿点在线 / 灰点离线 */
+.uh-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.uh-online::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b8bcc4;
+}
+
+.uh-online.on {
+  color: var(--success);
+}
+
+.uh-online.on::before {
+  background: var(--success);
 }
 
 .uh-bio {
