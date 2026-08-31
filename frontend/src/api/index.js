@@ -54,9 +54,28 @@ export const topicApi = {
 
 export const boilingApi = {
   list: (params) => data(http.get('/boiling', { params })),
+  // 精选沸点（右侧栏展示）
+  featured: (limit = 5) => data(http.get('/boiling/featured', { params: { limit } })),
+  // 我的圈子（我关注的话题名列表，需登录）
+  circles: () => data(http.get('/boiling/circles')),
   create: (payload) => data(http.post('/boiling', payload)),
   like: (id) => data(http.post(`/boiling/${id}/like`)),
-  remove: (id) => http.delete(`/boiling/${id}`)
+  // 收藏沸点
+  bookmark: (id) => data(http.post(`/boiling/${id}/bookmark`)),
+  // 转发/分享（后端计数）
+  share: (id) => data(http.post(`/boiling/${id}/share`)),
+  remove: (id) => http.delete(`/boiling/${id}`),
+  // 沸点评论列表（sort: default | latest | hot）
+  comments: (id, params) => data(http.get(`/boiling/${id}/comments`, { params })),
+  // 发布沸点评论（payload: { content, parentId? }）
+  addComment: (id, payload) => data(http.post(`/boiling/${id}/comments`, payload)),
+  // 评论赞/踩投票（up: true 赞 / false 踩）
+  voteComment: (commentId, up) => data(http.post(`/boiling/comments/${commentId}/vote`, { up })),
+  // 举报（targetType: BOILING | BOILING_COMMENT）
+  report: (targetType, targetId, reason) =>
+    data(http.post(`/boiling/${targetType}/${targetId}/report`, { reason })),
+  // 行为埋点上报（匿名可报）
+  analytics: (payload) => data(http.post('/boiling/analytics', payload))
 }
 
 export const leaderboardApi = {
