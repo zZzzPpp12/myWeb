@@ -1,0 +1,17 @@
+# Java / Maven
+backend/target/
+*.class
+
+# 运行时数据库（H2 本地文件）
+backend/data/
+
+# 日志
+*.log
+
+# 操作系统
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.iml
