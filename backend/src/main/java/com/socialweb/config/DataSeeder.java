@@ -31,6 +31,9 @@ public class DataSeeder implements ApplicationRunner {
     private final TopicFollowRepository topicFollowRepository;
     private final PostDislikeRepository dislikeRepository;
     private final BoilingPointRepository boilingRepository;
+    private final com.socialweb.repository.BoilingCommentRepository boilingCommentRepository;
+    private final com.socialweb.repository.BoilingCommentVoteRepository boilingCommentVoteRepository;
+    private final com.socialweb.repository.BoilingBookmarkRepository boilingBookmarkRepository;
     private final BCryptPasswordEncoder encoder;
 
     public DataSeeder(UserRepository userRepository,
@@ -44,6 +47,9 @@ public class DataSeeder implements ApplicationRunner {
                       TopicFollowRepository topicFollowRepository,
                       PostDislikeRepository dislikeRepository,
                       BoilingPointRepository boilingRepository,
+                      com.socialweb.repository.BoilingCommentRepository boilingCommentRepository,
+                      com.socialweb.repository.BoilingCommentVoteRepository boilingCommentVoteRepository,
+                      com.socialweb.repository.BoilingBookmarkRepository boilingBookmarkRepository,
                       BCryptPasswordEncoder encoder) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
@@ -56,6 +62,9 @@ public class DataSeeder implements ApplicationRunner {
         this.topicFollowRepository = topicFollowRepository;
         this.dislikeRepository = dislikeRepository;
         this.boilingRepository = boilingRepository;
+        this.boilingCommentRepository = boilingCommentRepository;
+        this.boilingCommentVoteRepository = boilingCommentVoteRepository;
+        this.boilingBookmarkRepository = boilingBookmarkRepository;
         this.encoder = encoder;
     }
 
@@ -272,12 +281,45 @@ public class DataSeeder implements ApplicationRunner {
         topicFollow(bob, vue); topicFollow(bob, fe); topicFollow(bob, sec);
         topicFollow(carol, db); topicFollow(carol, algo); topicFollow(carol, be);
 
-        // 沸点（掘金式短内容）
-        boil(alice, "刚把生产环境的 Full GC 问题解决了，改天写篇复盘。", null, 12, 15);
-        boil(bob, "Vue 3.5 的响应式重构真好用，`useTemplateRef` 好评。", null, 8, 45);
-        boil(carol, "刷了 100 道动态规划，状态转移方程终于有感觉了。", null, 5, 90);
-        boil(alice, "#架构 为什么说「缓存和数据库一致性」是个伪命题？", null, 3, 180);
-        boil(bob, "分享一个 Markdown 渲染 XSS 的坑，详见我主页的文章。", null, 2, 240);
+        // 沸点（掘金式短内容，含圈子/@提及）
+        BoilingPoint b1 = boil(alice, "刚把生产环境的 Full GC 问题解决了，改天写篇复盘。 @bob 一起来review？", "后端", 12, 15);
+        BoilingPoint b2 = boil(bob, "Vue 3.5 的响应式重构真好用，`useTemplateRef` 好评。", "前端", 8, 45);
+        BoilingPoint b3 = boil(carol, "刷了 100 道动态规划，状态转移方程终于有感觉了。", "算法", 5, 90);
+        BoilingPoint b4 = boil(alice, "#架构 为什么说「缓存和数据库一致性」是个伪命题？ @carol 怎么看", "架构", 3, 180);
+        BoilingPoint b5 = boil(bob, "分享一个 Markdown 渲染 XSS 的坑，详见我主页的文章。", "前端", 2, 240);
+        boilingRepository.saveAll(List.of(b1, b2, b3, b4, b5));
+
+        // 沸点评论（多级：主评论 + 回复）
+        BoilingComment bc1 = boilingComment(b1, bob, "好耶，我来学习一下排查思路！", null, null, 3, 0, 10);
+        boilingComment(b1, alice, "核心是 jstat + MAT 支配树。", bc1.getId(), bob, 1, 0, 8);
+        boilingComment(b2, carol, "已经用上了，编译速度也快了。", null, null, 2, 0, 30);
+        boilingComment(b4, carol, "严格来说是「弱一致」问题，业务允许就没毛病。", null, null, 4, 1, 120);
+        boilingComment(b3, bob, "100 道还不够，建议上 200。", null, null, 1, 0, 60);
+        // 同步沸点评论计数
+        b1.setCommentCount(2);
+        b2.setCommentCount(1);
+        b3.setCommentCount(1);
+        b4.setCommentCount(1);
+        boilingRepository.saveAll(List.of(b1, b2, b3, b4));
+
+        // 沸点评论投票
+        bcVote(alice, b1, bob, true);
+
+        // 沸点收藏/转发计数
+        b1.setBookmarkCount(1);
+        b4.setBookmarkCount(2);
+        b2.setShareCount(1);
+        boilingRepository.saveAll(List.of(b1, b2, b4));
+        boilBookmark(alice, b4);
+
+        // 用户活跃时间（bob 在线、carol 10 分钟前）
+        bob.setLastActiveAt(LocalDateTime.now());
+        carol.setLastActiveAt(LocalDateTime.now().minusMinutes(10));
+        userRepository.saveAll(List.of(bob, carol));
+
+        // 提及通知
+        notify(bob, alice, NotificationType.MENTION, null);
+        notify(carol, alice, NotificationType.MENTION, null);
 
         // 评论（含一级回复）
         comment(posts.get(0), bob, "虚拟线程这块太香了，实测 IO 密集接口 QPS 翻倍！", null, 1);
@@ -393,14 +435,55 @@ public class DataSeeder implements ApplicationRunner {
         dislikeRepository.save(d);
     }
 
-    private void boil(User author, String content, String imageUrl, long likeCount, long minutesAgo) {
+    private BoilingPoint boil(User author, String content, String circle, long likeCount, long minutesAgo) {
         BoilingPoint b = new BoilingPoint();
         b.setAuthor(author);
         b.setContent(content);
-        b.setImageUrl(imageUrl);
+        b.setCircle(circle);
         b.setLikeCount(likeCount);
         b.setCreatedAt(LocalDateTime.now().minusMinutes(minutesAgo));
-        boilingRepository.save(b);
+        return b;
+    }
+
+    private BoilingComment boilingComment(BoilingPoint bp, User author, String content,
+                                          Long parentId, User replyTo, long likes, long dislikes, long minutesAgo) {
+        BoilingComment c = new BoilingComment();
+        c.setBoilingPoint(bp);
+        c.setAuthor(author);
+        c.setContent(content);
+        c.setParentId(parentId);
+        c.setReplyToUser(replyTo);
+        c.setLikeCount(likes);
+        c.setDislikeCount(dislikes);
+        c.setCreatedAt(LocalDateTime.now().minusMinutes(minutesAgo));
+        return boilingCommentRepository.save(c);
+    }
+
+    /** 取该用户在指定沸点下的主评论 id（用于挂回复） */
+    private Long topCommentId(BoilingPoint bp, User author) {
+        return boilingCommentRepository.findByBoilingPointId(bp.getId()).stream()
+                .filter(c -> c.getAuthor().getId().equals(author.getId()) && c.getParentId() == null)
+                .map(BoilingComment::getId).findFirst().orElse(null);
+    }
+
+    private void bcVote(User voter, BoilingPoint bp, User commentAuthor, boolean up) {
+        boilingCommentRepository.findByBoilingPointId(bp.getId()).stream()
+                .filter(c -> c.getAuthor().getId().equals(commentAuthor.getId()) && c.getParentId() == null)
+                .findFirst()
+                .ifPresent(c -> {
+                    BoilingCommentVote v = new BoilingCommentVote();
+                    v.setUser(voter);
+                    v.setComment(c);
+                    v.setUp(up);
+                    boilingCommentVoteRepository.save(v);
+                });
+    }
+
+    private void boilBookmark(User u, BoilingPoint b) {
+        BoilingBookmark bm = new BoilingBookmark();
+        bm.setUser(u);
+        bm.setBoilingPoint(b);
+        boilingBookmarkRepository.save(bm);
     }
 
     private void notify(User recipient, User actor, NotificationType type, Long postId) {
