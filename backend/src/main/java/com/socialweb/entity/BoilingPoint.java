@@ -33,6 +33,21 @@ public class BoilingPoint {
     @Column(nullable = false)
     private long commentCount = 0;
 
+    @Column(nullable = false)
+    private long bookmarkCount = 0;
+
+    /** 转发数 */
+    @Column(nullable = false)
+    private long shareCount = 0;
+
+    /** 圈子/话题标记（原型「请选择圈子」，存话题名，可空） */
+    @Column(length = 64)
+    private String circle;
+
+    /** 内容中的 @提及 用户 id，逗号分隔 */
+    @Column(length = 500)
+    private String mentionedUserIds;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -13,6 +13,9 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
 
     long countByAuthorId(Long authorId);
 
+    @org.springframework.data.jpa.repository.Query("select coalesce(sum(p.likeCount), 0) from Post p where p.author.id = :authorId")
+    long sumLikeCountByAuthorId(@org.springframework.data.repository.query.Param("authorId") Long authorId);
+
     Page<Post> findByAuthorIdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
 
     List<Post> findByIdIn(Collection<Long> ids);

@@ -39,6 +39,10 @@ public class User {
     @Column(nullable = false)
     private int reputation = 0;
 
+    /** 最近活跃时间（用于前端「在线」状态推断：5 分钟内活跃视为在线） */
+    @Column(nullable = false)
+    private LocalDateTime lastActiveAt = LocalDateTime.now();
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
