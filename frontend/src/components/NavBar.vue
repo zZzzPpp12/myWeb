@@ -76,6 +76,8 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
           写文章
         </button>
 
+        <router-link class="nb-about" :class="{ active: route.path === '/about' }" to="/about">关于作者</router-link>
+
         <template v-if="auth.isLogin">
           <button class="nb-icon-btn" title="消息" @click="goNotif">
             <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -108,6 +110,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
       </form>
       <router-link class="nb-m-item" to="/boiling" @click="menuOpen = false">沸点</router-link>
       <router-link class="nb-m-item" to="/leaderboard" @click="menuOpen = false">排行榜</router-link>
+      <router-link class="nb-m-item" to="/about" @click="menuOpen = false">关于作者</router-link>
       <button class="nb-m-item" @click="goPublish">写文章</button>
       <template v-if="auth.isLogin">
         <button class="nb-m-item" @click="goNotif">消息通知<span v-if="notif.unread > 0" class="nb-dot nb-dot-inline">{{ unreadText }}</span></button>
@@ -191,6 +194,20 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 .nb-link.active {
   background: var(--primary-light);
   font-weight: 600;
+}
+
+.nb-about {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-2);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.nb-about:hover,
+.nb-about.active {
+  color: var(--primary);
 }
 
 .nb-search {

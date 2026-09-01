@@ -14,6 +14,7 @@ const routes = [
   { path: '/boiling', name: 'boiling', component: () => import('@/pages/Boiling.vue') },
   { path: '/topic/:name', name: 'topic', component: () => import('@/pages/Topic.vue'), props: true },
   { path: '/leaderboard', name: 'leaderboard', component: () => import('@/pages/Leaderboard.vue') },
+  { path: '/about', name: 'about', component: () => import('@/pages/About.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
