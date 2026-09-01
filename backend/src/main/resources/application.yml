@@ -33,3 +33,5 @@ app:
 logging:
   level:
     root: info
+    # 打印每个进入的 HTTP 请求（如 POST /api/auth/register）
+    org.springframework.web: debug
