@@ -2,6 +2,9 @@
 backend/target/
 *.class
 
+# 前端构建产物（部署时由脚本拷入，不入库）
+backend/src/main/resources/static/
+
 # 运行时数据库（H2 本地文件）
 backend/data/
 
